@@ -525,10 +525,6 @@ showVPNUsers() {
 	echo ""
 }
 
-testFunc() {
-	echo "Test"
-}
-
 while true; do
 
 	echo ""
@@ -552,7 +548,6 @@ while true; do
 		[5]* ) deleteVPNUser;;
 		[6]* ) showVPNUsers;;
 		[7]* ) getVPNProfileIPhone;;
-		[9]* ) testFunc;;
 		[0]* ) break;;
 		* ) echo "Select a menu item.";;
   esac
