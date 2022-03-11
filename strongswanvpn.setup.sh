@@ -311,6 +311,8 @@ installStrongSwanVPNServer() {
 	editFirewall
 
 	echo "The strongSwan VPN server has been installed. A server reboot is required to continue."
+	
+	reboot
 }
 
 showCARootCertificate() {
@@ -365,6 +367,8 @@ addVPNUser() {
 	echo "StrongSwan VPN server user certificate created"
 
 	echo "$USER_NAME : EAP \"$USER_PASSWORD\"" >> /etc/ipsec.secrets
+	
+	ipsec restart
 
 	echo "User \"$USER_NAME\" has been created"
 }
