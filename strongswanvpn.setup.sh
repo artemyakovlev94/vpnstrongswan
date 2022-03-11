@@ -525,6 +525,13 @@ showVPNUsers() {
 	echo ""
 }
 
+testFunc() {
+    $SERVER_IP_ADDRESS = echo hostname -I
+    $SERVER_NAME = echo hostname
+
+    echo "Server: $SERVER_NAME [$SERVER_IP_ADDRESS]"
+}
+
 while true; do
 
 	echo ""
@@ -548,6 +555,7 @@ while true; do
 		[5]* ) deleteVPNUser;;
 		[6]* ) showVPNUsers;;
 		[7]* ) getVPNProfileIPhone;;
+        [9]* ) testFunc;;
 		[0]* ) break;;
 		* ) echo "Select a menu item.";;
   esac
