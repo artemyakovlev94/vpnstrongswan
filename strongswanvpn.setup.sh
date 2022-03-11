@@ -250,7 +250,7 @@ editFirewall() {
 installStrongSwanVPNServer() {
 
 	# Подтверждение установки strongSwan VPN сервера
-  echo "Do you want to install strongSwan VPN server? [Y/n]"
+  	echo "Do you want to install strongSwan VPN server? [Y/n]"
 	read -p "" yn
 	case $yn in
 		[Yy]* ) break;;
@@ -311,8 +311,15 @@ installStrongSwanVPNServer() {
 	editFirewall
 
 	echo "The strongSwan VPN server has been installed. A server reboot is required to continue."
-	
-	reboot
+
+	# Подтверждение перезапуска сервера
+  	echo "Reboot the server? [Y/n]"
+	read -p "" yn
+	case $yn in
+		[Yy]* ) reboot;;
+		[Nn]* ) return;;
+		* ) echo "Please answer with Yes or No [Y/n]";;
+	esac
 }
 
 showCARootCertificate() {
@@ -367,7 +374,8 @@ addVPNUser() {
 	echo "StrongSwan VPN server user certificate created"
 
 	echo "$USER_NAME : EAP \"$USER_PASSWORD\"" >> /etc/ipsec.secrets
-	
+
+	# Перезапустить strongSwan
 	ipsec restart
 
 	echo "User \"$USER_NAME\" has been created"
@@ -419,7 +427,7 @@ getVPNProfileIPhone() {
 		rm $MOBILECONFIG_PATH/$MOBILECONFIG_SH
 	fi
 
-	wget -P $MOBILECONFIG_PATH https://raw.githubusercontent.com/artemyakovlev94/vpnstrongswan/main/mobileconfig.sh
+	wget -P $MOBILECONFIG_PATH https://raw.githubusercontent.com/artemyakovlev94/strongswandebian/main/mobileconfig.sh
 
 	sed -i "s/CLIENT=\"client_name\"/CLIENT=\"$USER_NAME\"/" $MOBILECONFIG_PATH/$MOBILECONFIG_SH
 	sed -i "s/SERVER=\"server_name\"/SERVER=\"$SERVER_NAME\"/" $MOBILECONFIG_PATH/$MOBILECONFIG_SH
