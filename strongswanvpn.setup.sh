@@ -335,7 +335,7 @@ addVPNUser() {
 
 	# Ввод имени нового пользователя
 	while true; do
-		read -p "Enter user name: " USER_NAME 
+		read -p "Enter username: " USER_NAME 
 		if [ "$USER_NAME" != "" ]; then
 			if [ "$USER_NAME" = "exit" ]; then
 				return
@@ -343,7 +343,13 @@ addVPNUser() {
 				if [ -f "/etc/ipsec.d/private/$USER_NAME.pem" ] || [ -f "/etc/ipsec.d/certs/$USER_NAME.pem" ]; then
 					echo "A user with the same name already exists"
 				else
-					break
+					echo "Confirm new user [" $USER_NAME "] [Y/n]:"
+					read -p "" yn
+					case $yn in
+						[Yy]* ) break;;
+						[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
+						* ) echo "Please answer with Yes or No [Y/n].";;
+					esac
 				fi
 			fi
 		fi
@@ -356,7 +362,13 @@ addVPNUser() {
 			if [ "$USER_PASSWORD" = "exit" ]; then
 				return
 			else
-				break
+				echo "Confirm password [" $USER_PASSWORD "] [Y/n]:"
+				read -p "" yn
+				case $yn in
+					[Yy]* ) break;;
+					[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
+					* ) echo "Please answer with Yes or No [Y/n].";;
+				esac
 			fi
 		fi
 	done
@@ -381,17 +393,59 @@ addVPNUser() {
 	echo "User \"$USER_NAME\" has been created"
 }
 
+# Удалить пользователя strongSwan VPN сервера
+deleteVPNUser() {
+
+	# Ввод имени пользователя
+	while true; do
+		read -p "Enter username: " USER_NAME 
+		if [ "$USER_NAME" != "" ]; then
+			if [ "$USER_NAME" = "exit" ]; then
+				return
+			else
+				echo "Confirm delete user [" $USER_NAME "] [Y/n]:"
+				read -p "" yn
+				case $yn in
+					[Yy]* ) break;;
+					[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
+					* ) echo "Please answer with Yes or No [Y/n].";;
+				esac
+			fi
+		fi
+	done
+
+	if [ -f "/etc/ipsec.d/private/$USER_NAME.pem" ]; then
+		cp -p -f /etc/ipsec.d/private/$USER_NAME.pem /etc/ipsec.d/private/$USER_NAME.pem.backup
+		rm /etc/ipsec.d/private/$USER_NAME.pem
+	fi
+
+	if [ -f "/etc/ipsec.d/certs/$USER_NAME.pem" ]; then
+		cp -p -f /etc/ipsec.d/certs/$USER_NAME.pem /etc/ipsec.d/certs/$USER_NAME.pem.backup
+		rm /etc/ipsec.d/certs/$USER_NAME.pem
+	fi
+
+	sed -i "/$USER_NAME/d" /etc/ipsec.secrets
+
+	echo "User [$USER_NAME] has been deleted"
+}
+
 # Сформировать профиль конфигурации VPN для iPhone
 getVPNProfileIPhone() {
 
 	while true; do
-		read -p "Enter user name: " USER_NAME 
+		read -p "Enter username: " USER_NAME 
 		if [ "$USER_NAME" != "" ]; then
 			if [ "$USER_NAME" = "exit" ]; then
 				return
 			else
 				if [ -f "/etc/ipsec.d/private/$USER_NAME.pem" ] && [ -f "/etc/ipsec.d/certs/$USER_NAME.pem" ]; then
-					break
+					echo "Confirm username [" $USER_NAME "] [Y/n]:"
+					read -p "" yn
+					case $yn in
+						[Yy]* ) break;;
+						[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
+						* ) echo "Please answer with Yes or No [Y/n].";;
+					esac
 				else
 					echo "User with this name does not exist"
 				fi
@@ -403,10 +457,16 @@ getVPNProfileIPhone() {
 	while true; do
 		read -p "Enter the IP address of this strongSwan VPN server: " SERVER_IP_ADDRESS 
 		if [ "$SERVER_IP_ADDRESS" != "" ]; then
-			if [ "$USER_NAME" = "exit" ]; then
+			if [ "$SERVER_IP_ADDRESS" = "exit" ]; then
 				return
 			else
-				break;
+				echo "Confirm IP address [" $SERVER_IP_ADDRESS "] [Y/n]:"
+				read -p "" yn
+				case $yn in
+					[Yy]* ) break;;
+					[Nn]* ) echo "Retype IP address or enter \"exit\" to cancel";;
+					* ) echo "Please answer with Yes or No [Y/n].";;
+				esac
 			fi
 		fi
 	done
@@ -415,10 +475,16 @@ getVPNProfileIPhone() {
 	while true; do
 		read -p "Enter the name of this strongSwan VPN server: " SERVER_NAME 
 		if [ "$SERVER_NAME" != "" ]; then
-			if [ "$USER_NAME" = "exit" ]; then
+			if [ "$SERVER_NAME" = "exit" ]; then
 				return
 			else
-				break;
+				echo "Confirm name of this strongSwan VPN server [" $SERVER_NAME "] [Y/n]:"
+				read -p "" yn
+				case $yn in
+					[Yy]* ) break;;
+					[Nn]* ) echo "Retype name of this strongSwan VPN server or enter \"exit\" to cancel";;
+					* ) echo "Please answer with Yes or No [Y/n].";;
+				esac
 			fi
 		fi
 	done
@@ -459,25 +525,34 @@ showVPNUsers() {
 	echo ""
 }
 
+testFunc() {
+	echo "Test"
+}
+
 while true; do
 
 	echo ""
 	echo "*******************************************"
 	echo "* 1 - Install strongSwan VPN server"
-	echo "* 2 - Show VPN Server CA Root Certificate"
-	echo "* 3 - Add strongSwan VPN server user"
-	echo "* 4 - Get VPN Configuration Profile for iPhone"
-	echo "* 5 - Show VPN Users and Passwords"
+	echo "* 2 - Restart strongSwan"
+	echo "* 3 - Show VPN Server CA Root Certificate"
+	echo "* 4 - Add strongSwan VPN server user"
+	echo "* 5 - Delete strongSwan VPN server user"
+	echo "* 6 - Show VPN Users and Passwords"
+	echo "* 7 - Get VPN Configuration Profile for iPhone"
 	echo "* 0 - Exit setup"
 	echo "*******************************************"
 
   read -p "" yn
   case $yn in
 		[1]* ) installStrongSwanVPNServer;;
-		[2]* ) showCARootCertificate;;
-		[3]* ) addVPNUser;;
-		[4]* ) getVPNProfileIPhone;;
-		[5]* ) showVPNUsers;;
+		[2]* ) ipsec restart;;
+		[3]* ) showCARootCertificate;;
+		[4]* ) addVPNUser;;
+		[5]* ) deleteVPNUser;;
+		[6]* ) showVPNUsers;;
+		[7]* ) getVPNProfileIPhone;;
+		[9]* ) testFunc;;
 		[0]* ) break;;
 		* ) echo "Select a menu item.";;
   esac
