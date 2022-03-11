@@ -78,7 +78,7 @@ createCertificateCA() {
 	ipsec pki --gen --type rsa --size 4096 --outform pem > /etc/ipsec.d/private/$CERT_CA.pem
 	ipsec pki --self --ca --lifetime 3650 --in /etc/ipsec.d/private/$CERT_CA.pem \
 	--type rsa --digest sha256 \
-	--dn "CN=$SERVER_NAME root CA" \
+	--dn "CN=$SERVER_IP_ADDRESS" \
 	--outform pem > /etc/ipsec.d/cacerts/$CERT_CA.pem
 
 	echo "StrongSwan VPN server CA root certificate has been created"
