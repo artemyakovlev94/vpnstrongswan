@@ -415,7 +415,7 @@ getVPNProfileIPhone() {
 		rm $MOBILECONFIG_PATH/$MOBILECONFIG_SH
 	fi
 
-	wget -P $MOBILECONFIG_PATH https://raw.githubusercontent.com/artemyakovlev94/strongswandebian/main/mobileconfig.sh
+	wget -P $MOBILECONFIG_PATH https://raw.githubusercontent.com/artemyakovlev94/vpnstrongswan/main/mobileconfig.sh
 
 	sed -i "s/CLIENT=\"client_name\"/CLIENT=\"$USER_NAME\"/" $MOBILECONFIG_PATH/$MOBILECONFIG_SH
 	sed -i "s/SERVER=\"server_name\"/SERVER=\"$SERVER_NAME\"/" $MOBILECONFIG_PATH/$MOBILECONFIG_SH
