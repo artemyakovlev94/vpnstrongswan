@@ -379,7 +379,7 @@ addVPNUser() {
 	--cacert /etc/ipsec.d/cacerts/$CERT_CA.pem \
 	--cakey /etc/ipsec.d/private/$CERT_CA.pem \
 	--dn "CN=$USER_NAME" \
-	--san me \
+	--san $USER_NAME \
 	--flag clientAuth \
 	--outform pem > /etc/ipsec.d/certs/$USER_NAME.pem
 
