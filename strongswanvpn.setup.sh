@@ -30,6 +30,9 @@ USER_PASSWORD=12345
 MOBILECONFIG_PATH=/etc/ipsec.d
 MOBILECONFIG_SH=mobileconfig.sh
 MOBILECONFIG_CONF=iphone.mobileconfig
+
+SHELLWINDOWS_PATH=/etc/ipsec.d
+SHELLWINDOWS_PS1=scriptwindows.ps1
 # *****************
 
 installPackagesVPNServer() {
@@ -512,6 +515,42 @@ showVPNUsers() {
 	echo ""
 }
 
+getShellWindowsScript() {
+
+	if [ -f "$SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1" ]; then
+		rm $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
+	fi
+
+	SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
+    SERVER_NAME=$(hostname | sed s/' '//g)
+	CA_CERT_CONTENT=$(cat /etc/ipsec.d/cacerts/$CERT_CA)
+
+	wget -P $SHELLWINDOWS_PATH https://raw.githubusercontent.com/artemyakovlev94/vpnstrongswan/main/scriptwindows.ps1
+
+	sed -i "s/\"CA_CONTENT\"/$CA_CERT_CONTENT/" $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
+	sed -i "s/\"HOST_NAME\"/\"$SERVER_NAME\"/" $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
+	sed -i "s/\"HOST_IP_ADDRESS\"/\"$SERVER_IP_ADDRESS\"/" $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
+
+	echo ""
+	echo "########### [ Скопируйте блок ниже ] ##########"
+	echo "############### [ BEGIN BLOCK ] ###############"
+	echo ""
+	echo "###############################################"
+	echo ""
+
+	cat $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
+
+	echo ""
+	echo "###############################################"
+	echo ""
+	echo "################ [ END BLOCK ] ################"
+	echo ""
+
+	if [ -f "$SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1" ]; then
+		rm $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
+	fi
+}
+
 while true; do
 
 	echo ""
@@ -523,6 +562,7 @@ while true; do
 	echo "* 5 - Delete strongSwan VPN server user"
 	echo "* 6 - Show VPN Users and Passwords"
 	echo "* 7 - Get VPN Configuration Profile for iPhone"
+	echo "* 8 - Get PowerShell Script to Install VPN Server Certificate Authority Certificate"
 	echo "* 0 - Exit setup"
 	echo "*******************************************"
 
@@ -535,6 +575,7 @@ while true; do
 		[5]* ) deleteVPNUser;;
 		[6]* ) showVPNUsers;;
 		[7]* ) getVPNProfileIPhone;;
+        [8]* ) getShellWindowsScript;;
 		[0]* ) break;;
 		* ) echo "Select a menu item.";;
   esac
