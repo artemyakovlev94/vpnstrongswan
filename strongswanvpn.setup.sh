@@ -551,6 +551,11 @@ getShellWindowsScript() {
 	fi
 }
 
+testFunc() {
+	CA_CERT_CONTENT=$(cat /etc/ipsec.d/cacerts/$CERT_CA)
+	cat $CA_CERT_CONTENT
+}
+
 while true; do
 
 	echo ""
@@ -576,6 +581,7 @@ while true; do
 		[6]* ) showVPNUsers;;
 		[7]* ) getVPNProfileIPhone;;
         [8]* ) getShellWindowsScript;;
+		[9]* ) testFunc;;
 		[0]* ) break;;
 		* ) echo "Select a menu item.";;
   esac
