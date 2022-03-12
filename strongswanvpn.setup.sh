@@ -255,9 +255,9 @@ setIPAddressThisServer() {
 			if [ "$SERVER_IP_ADDRESS" = "exit" ]; then
 				exit 0;
 			else
-				read -p "Confirm the IP address of this server [" $SERVER_IP_ADDRESS "] [Y/n] " yn
+				read -p "Confirm the IP address of this server [$SERVER_IP_ADDRESS] [Y/n] " yn
 				case $yn in
-					[Yy]* ) return;;
+					[Yy]* ) break;;
 					[Nn]* ) echo "Enter the IP address of this server or enter 'exit' to exit the installer";;
 					* ) echo "Please answer with Yes or No [Y/n].";;
 				esac
@@ -274,9 +274,9 @@ setHostnameThisServer() {
 			if [ "$SERVER_NAME" = "exit" ]; then
 				exit 0;
 			else
-				read -p "Confirm the hostname of this server [" $SERVER_NAME "] [Y/n] " yn
+				read -p "Confirm the hostname of this server [$SERVER_NAME] [Y/n] " yn
 				case $yn in
-					[Yy]* ) hostname $SERVER_NAME; return;;
+					[Yy]* ) break;;
 					[Nn]* ) echo "Enter the hostname of this server or enter 'exit' to exit the installer";;
 					* ) echo "Please answer with Yes or No [Y/n].";;
 				esac
@@ -308,6 +308,8 @@ installStrongSwanVPNServer() {
 		[Nn]* ) setHostnameThisServer;;
 		* ) echo "Please answer with Yes or No [Y/n]";;
 	esac
+
+	hostnamectl set-hostname $SERVER_NAME
 
 	# Установить необходимые пакеты для strongSwan VPN сервера
 	installPackagesVPNServer
@@ -365,7 +367,7 @@ addVPNUser() {
 				if [ -f "/etc/ipsec.d/private/$USER_NAME.pem" ] || [ -f "/etc/ipsec.d/certs/$USER_NAME.pem" ]; then
 					echo "A user with the same name already exists"
 				else
-					read -p "Confirm new user [" $USER_NAME "] [Y/n] " yn
+					read -p "Confirm new user [$USER_NAME] [Y/n] " yn
 					case $yn in
 						[Yy]* ) break;;
 						[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
@@ -383,7 +385,7 @@ addVPNUser() {
 			if [ "$USER_PASSWORD" = "exit" ]; then
 				return
 			else
-				read -p  "Confirm password [" $USER_PASSWORD "] [Y/n] " yn
+				read -p  "Confirm password [$USER_PASSWORD] [Y/n] " yn
 				case $yn in
 					[Yy]* ) break;;
 					[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
@@ -423,7 +425,7 @@ deleteVPNUser() {
 			if [ "$USER_NAME" = "exit" ]; then
 				return
 			else
-				read -p  "Confirm delete user [" $USER_NAME "] [Y/n] " yn
+				read -p  "Confirm delete user [$USER_NAME] [Y/n] " yn
 				case $yn in
 					[Yy]* ) break;;
 					[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
@@ -458,7 +460,7 @@ getVPNProfileIPhone() {
 				return
 			else
 				if [ -f "/etc/ipsec.d/private/$USER_NAME.pem" ] && [ -f "/etc/ipsec.d/certs/$USER_NAME.pem" ]; then
-					read -p "Confirm username [" $USER_NAME "] [Y/n] " yn
+					read -p "Confirm username [$USER_NAME] [Y/n] " yn
 					case $yn in
 						[Yy]* ) break;;
 						[Nn]* ) echo "Enter username or enter \"exit\" to cancel";;
@@ -514,6 +516,18 @@ testFunc() {
     SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
     SERVER_NAME=$(hostname | sed s/' '//g)
     echo "Server: $SERVER_NAME [$SERVER_IP_ADDRESS]"
+
+	read -p "Enter new name: " NEW_NAME
+
+	if [ "$NEW_NAME" != "" ]
+	then
+		hostname $NEW_NAME
+	fi
+
+	SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
+    SERVER_NAME=$(hostname | sed s/' '//g)
+
+	echo "Server new name: $SERVER_NAME [$SERVER_IP_ADDRESS]"
 }
 
 while true; do
