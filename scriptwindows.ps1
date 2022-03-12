@@ -1,5 +1,4 @@
 $CAContent = "CA_CONTENT"
-
 $HostName = "HOST_NAME"
 $HostAddress = "HOST_IP_ADDRESS"
 
