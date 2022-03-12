@@ -22,8 +22,8 @@ fi
 
 # *** Variables ***
 CERT_CA=ca
-SERVER_IP_ADDRESS=127.0.0.1
-SERVER_NAME=VPN
+SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
+SERVER_NAME=$(hostname | sed s/' '//g)
 USER_NAME=user
 USER_PASSWORD=12345
 
@@ -247,44 +247,67 @@ editFirewall() {
 	echo "firewall has been edited"
 }
 
+setIPAddressThisServer() {
+
+	while true; do
+		read -p "Enter the IP address of this server: " SERVER_IP_ADDRESS 
+		if [ "$SERVER_IP_ADDRESS" != "" ]; then
+			if [ "$SERVER_IP_ADDRESS" = "exit" ]; then
+				exit 0;
+			else
+				read -p "Confirm the IP address of this server [" $SERVER_IP_ADDRESS "] [Y/n] " yn
+				case $yn in
+					[Yy]* ) return;;
+					[Nn]* ) echo "Enter the IP address of this server or enter 'exit' to exit the installer";;
+					* ) echo "Please answer with Yes or No [Y/n].";;
+				esac
+			fi
+		fi
+	done
+}
+
+setHostnameThisServer() {
+
+	while true; do
+		read -p "Enter the hostname of this server: " SERVER_NAME 
+		if [ "$SERVER_NAME" != "" ]; then
+			if [ "$SERVER_NAME" = "exit" ]; then
+				exit 0;
+			else
+				read -p "Confirm the hostname of this server [" $SERVER_NAME "] [Y/n] " yn
+				case $yn in
+					[Yy]* ) hostname $SERVER_NAME; return;;
+					[Nn]* ) echo "Enter the hostname of this server or enter 'exit' to exit the installer";;
+					* ) echo "Please answer with Yes or No [Y/n].";;
+				esac
+			fi
+		fi
+	done
+}
+
 installStrongSwanVPNServer() {
 
 	# Подтверждение установки strongSwan VPN сервера
-  	echo "Do you want to install strongSwan VPN server? [Y/n]"
-	read -p "" yn
+	read -p "Do you want to install strongSwan VPN server? [Y/n] " yn
 	case $yn in
 		[Yy]* ) break;;
 		[Nn]* ) return;;
 		* ) echo "Please answer with Yes or No [Y/n]";;
 	esac
 
-	# Ввод IP адреса сервера
-	while true; do
-		read -p "Enter the IP address of this server: " SERVER_IP_ADDRESS 
-		if [ "$SERVER_IP_ADDRESS" != "" ]; then
-			echo "Confirm the IP address of this server [" $SERVER_IP_ADDRESS "] [Y/n]:"
-			read -p "" yn
-			case $yn in
-				[Yy]* ) break;;
-				[Nn]* ) return;;
-				* ) echo "Please answer with Yes or No [Y/n].";;
-			esac
-		fi
-	done
+	read -p "Confirm the IP address of this server [$SERVER_IP_ADDRESS] [Y/n] " yn
+	case $yn in
+		[Yy]* ) echo "IP address of this server $SERVER_IP_ADDRESS";;
+		[Nn]* ) setIPAddressThisServer;;
+		* ) echo "Please answer with Yes or No [Y/n]";;
+	esac
 
-	# Ввод наименования VPN сервера
-	while true; do
-		read -p "Enter the name of the future strongSwan VPN server: " SERVER_NAME 
-		if [ "$SERVER_NAME" != "" ]; then
-			echo "Confirm the name of the future strongSwan VPN server [" $SERVER_NAME "] [Y/n]:"
-			read -p "" yn
-			case $yn in
-				[Yy]* ) break;;
-				[Nn]* ) return;;
-				* ) echo "Please answer with Yes or No [Y/n].";;
-			esac
-		fi
-	done
+	read -p "Confirm the hostname of this server [$SERVER_NAME] [Y/n] " yn
+	case $yn in
+		[Yy]* ) echo "Hostname of this server $SERVER_NAME";;
+		[Nn]* ) setHostnameThisServer;;
+		* ) echo "Please answer with Yes or No [Y/n]";;
+	esac
 
 	# Установить необходимые пакеты для strongSwan VPN сервера
 	installPackagesVPNServer
@@ -313,8 +336,7 @@ installStrongSwanVPNServer() {
 	echo "The strongSwan VPN server has been installed. A server reboot is required to continue."
 
 	# Подтверждение перезапуска сервера
-  	echo "Reboot the server? [Y/n]"
-	read -p "" yn
+  	read -p "Reboot the server? [Y/n]" yn
 	case $yn in
 		[Yy]* ) reboot;;
 		[Nn]* ) return;;
@@ -343,8 +365,7 @@ addVPNUser() {
 				if [ -f "/etc/ipsec.d/private/$USER_NAME.pem" ] || [ -f "/etc/ipsec.d/certs/$USER_NAME.pem" ]; then
 					echo "A user with the same name already exists"
 				else
-					echo "Confirm new user [" $USER_NAME "] [Y/n]:"
-					read -p "" yn
+					read -p "Confirm new user [" $USER_NAME "] [Y/n] " yn
 					case $yn in
 						[Yy]* ) break;;
 						[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
@@ -362,8 +383,7 @@ addVPNUser() {
 			if [ "$USER_PASSWORD" = "exit" ]; then
 				return
 			else
-				echo "Confirm password [" $USER_PASSWORD "] [Y/n]:"
-				read -p "" yn
+				read -p  "Confirm password [" $USER_PASSWORD "] [Y/n] " yn
 				case $yn in
 					[Yy]* ) break;;
 					[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
@@ -403,8 +423,7 @@ deleteVPNUser() {
 			if [ "$USER_NAME" = "exit" ]; then
 				return
 			else
-				echo "Confirm delete user [" $USER_NAME "] [Y/n]:"
-				read -p "" yn
+				read -p  "Confirm delete user [" $USER_NAME "] [Y/n] " yn
 				case $yn in
 					[Yy]* ) break;;
 					[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
@@ -439,11 +458,10 @@ getVPNProfileIPhone() {
 				return
 			else
 				if [ -f "/etc/ipsec.d/private/$USER_NAME.pem" ] && [ -f "/etc/ipsec.d/certs/$USER_NAME.pem" ]; then
-					echo "Confirm username [" $USER_NAME "] [Y/n]:"
-					read -p "" yn
+					read -p "Confirm username [" $USER_NAME "] [Y/n] " yn
 					case $yn in
 						[Yy]* ) break;;
-						[Nn]* ) echo "Retype username or enter \"exit\" to cancel";;
+						[Nn]* ) echo "Enter username or enter \"exit\" to cancel";;
 						* ) echo "Please answer with Yes or No [Y/n].";;
 					esac
 				else
@@ -453,41 +471,8 @@ getVPNProfileIPhone() {
 		fi
 	done
 
-	# IP Адрес сервера
-	while true; do
-		read -p "Enter the IP address of this strongSwan VPN server: " SERVER_IP_ADDRESS 
-		if [ "$SERVER_IP_ADDRESS" != "" ]; then
-			if [ "$SERVER_IP_ADDRESS" = "exit" ]; then
-				return
-			else
-				echo "Confirm IP address [" $SERVER_IP_ADDRESS "] [Y/n]:"
-				read -p "" yn
-				case $yn in
-					[Yy]* ) break;;
-					[Nn]* ) echo "Retype IP address or enter \"exit\" to cancel";;
-					* ) echo "Please answer with Yes or No [Y/n].";;
-				esac
-			fi
-		fi
-	done
-
-	# Наименование сервера
-	while true; do
-		read -p "Enter the name of this strongSwan VPN server: " SERVER_NAME 
-		if [ "$SERVER_NAME" != "" ]; then
-			if [ "$SERVER_NAME" = "exit" ]; then
-				return
-			else
-				echo "Confirm name of this strongSwan VPN server [" $SERVER_NAME "] [Y/n]:"
-				read -p "" yn
-				case $yn in
-					[Yy]* ) break;;
-					[Nn]* ) echo "Retype name of this strongSwan VPN server or enter \"exit\" to cancel";;
-					* ) echo "Please answer with Yes or No [Y/n].";;
-				esac
-			fi
-		fi
-	done
+	SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
+    SERVER_NAME=$(hostname | sed s/' '//g)
 
 	if [ -f "$MOBILECONFIG_PATH/$MOBILECONFIG_SH" ]; then
 		rm $MOBILECONFIG_PATH/$MOBILECONFIG_SH
@@ -526,9 +511,8 @@ showVPNUsers() {
 }
 
 testFunc() {
-    $SERVER_IP_ADDRESS = echo hostname -I
-    $SERVER_NAME = echo hostname
-
+    SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
+    SERVER_NAME=$(hostname | sed s/' '//g)
     echo "Server: $SERVER_NAME [$SERVER_IP_ADDRESS]"
 }
 
