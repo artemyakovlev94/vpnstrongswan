@@ -512,24 +512,6 @@ showVPNUsers() {
 	echo ""
 }
 
-testFunc() {
-    SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
-    SERVER_NAME=$(hostname | sed s/' '//g)
-    echo "Server: $SERVER_NAME [$SERVER_IP_ADDRESS]"
-
-	read -p "Enter new name: " NEW_NAME
-
-	if [ "$NEW_NAME" != "" ]
-	then
-		hostname $NEW_NAME
-	fi
-
-	SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
-    SERVER_NAME=$(hostname | sed s/' '//g)
-
-	echo "Server new name: $SERVER_NAME [$SERVER_IP_ADDRESS]"
-}
-
 while true; do
 
 	echo ""
@@ -553,7 +535,6 @@ while true; do
 		[5]* ) deleteVPNUser;;
 		[6]* ) showVPNUsers;;
 		[7]* ) getVPNProfileIPhone;;
-        [9]* ) testFunc;;
 		[0]* ) break;;
 		* ) echo "Select a menu item.";;
   esac
