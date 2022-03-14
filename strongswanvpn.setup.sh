@@ -22,7 +22,7 @@ fi
 
 # *** Variables ***
 CERT_CA=ca
-SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
+SERVER_IP_ADDRESS=$(ip addr show eth0 | awk '$1 == "inet" {gsub(/\/.*$/, "", $2); print $2}')
 SERVER_NAME=$(hostname | sed s/' '//g)
 USER_NAME=user
 USER_PASSWORD=12345
@@ -47,6 +47,9 @@ installPackagesVPNServer() {
 	apt-get install libcharon-extauth-plugins
 	apt-get install zsh
 	apt-get install iptables-persistent
+
+    wget -P /root https://raw.githubusercontent.com/artemyakovlev94/vpnstrongswan/main/mobileconfig.sh
+    # скачать файл скрипта powershell в /root
 
 	echo "StrongSwan VPN Server packages have been installed"
 }
@@ -111,6 +114,33 @@ createCertificateServer() {
 	--outform pem > /etc/ipsec.d/certs/$SERVER_NAME.pem
 
 	echo "The strongSwan VPN server certificate has been created"
+}
+
+# Create user certificate strongSwan VPN server
+createCertificateUser() {
+
+    if [ -f "/etc/ipsec.d/private/$USER_NAME.pem" ]; then
+		cp -p -f /etc/ipsec.d/private/$USER_NAME.pem /etc/ipsec.d/private/$USER_NAME.pem.backup
+		rm /etc/ipsec.d/private/$USER_NAME.pem
+	fi
+
+	if [ -f "/etc/ipsec.d/certs/$USER_NAME.pem" ]; then
+		cp -p -f /etc/ipsec.d/certs/$USER_NAME.pem /etc/ipsec.d/certs/$USER_NAME.pem.backup
+		rm /etc/ipsec.d/certs/$USER_NAME.pem
+	fi
+
+    ipsec pki --gen --type rsa --size 4096 --outform pem > /etc/ipsec.d/private/$USER_NAME.pem
+	ipsec pki --pub --in /etc/ipsec.d/private/$USER_NAME.pem --type rsa |
+	ipsec pki --issue --lifetime 3650 --digest sha256 \
+	--cacert /etc/ipsec.d/cacerts/$CERT_CA.pem \
+	--cakey /etc/ipsec.d/private/$CERT_CA.pem \
+	--dn "CN=$USER_NAME" \
+	--san $USER_NAME \
+	--flag clientAuth \
+	--outform pem > /etc/ipsec.d/certs/$USER_NAME.pem
+
+	echo "StrongSwan VPN server user certificate created"
+
 }
 
 # Edit ipsec.conf
@@ -398,17 +428,7 @@ addVPNUser() {
 		fi
 	done
 
-	ipsec pki --gen --type rsa --size 4096 --outform pem > /etc/ipsec.d/private/$USER_NAME.pem
-	ipsec pki --pub --in /etc/ipsec.d/private/$USER_NAME.pem --type rsa |
-	ipsec pki --issue --lifetime 3650 --digest sha256 \
-	--cacert /etc/ipsec.d/cacerts/$CERT_CA.pem \
-	--cakey /etc/ipsec.d/private/$CERT_CA.pem \
-	--dn "CN=$USER_NAME" \
-	--san $USER_NAME \
-	--flag clientAuth \
-	--outform pem > /etc/ipsec.d/certs/$USER_NAME.pem
-
-	echo "StrongSwan VPN server user certificate created"
+	createCertificateUser
 
 	echo "$USER_NAME : EAP \"$USER_PASSWORD\"" >> /etc/ipsec.secrets
 
@@ -453,6 +473,17 @@ deleteVPNUser() {
 	echo "User [$USER_NAME] has been deleted"
 }
 
+# Show VPN Users and Passwords
+showVPNUsers() {
+	echo ""
+	echo "=========== VPN Users ==========="
+	echo ""
+	grep -i " : EAP " /etc/ipsec.secrets
+	echo ""
+	echo "================================="
+	echo ""
+}
+
 # Сформировать профиль конфигурации VPN для iPhone
 getVPNProfileIPhone() {
 
@@ -476,84 +507,48 @@ getVPNProfileIPhone() {
 		fi
 	done
 
-	SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
-    SERVER_NAME=$(hostname | sed s/' '//g)
+    if [ -f "/root/mobileconfig.sh" ]; then
 
-	if [ -f "$MOBILECONFIG_PATH/$MOBILECONFIG_SH" ]; then
-		rm $MOBILECONFIG_PATH/$MOBILECONFIG_SH
-	fi
+        if [ -f "/root/n.mobileconfig.sh" ]; then
+            rm /root/n.mobileconfig.sh
+        fi
 
-	wget -P $MOBILECONFIG_PATH https://raw.githubusercontent.com/artemyakovlev94/vpnstrongswan/main/mobileconfig.sh
+        cp -p -f /root/mobileconfig.sh /root/n.mobileconfig.sh
 
-	sed -i "s/CLIENT=\"client_name\"/CLIENT=\"$USER_NAME\"/" $MOBILECONFIG_PATH/$MOBILECONFIG_SH
-	sed -i "s/SERVER=\"server_name\"/SERVER=\"$SERVER_NAME\"/" $MOBILECONFIG_PATH/$MOBILECONFIG_SH
-	sed -i "s/FQDN=\"server_ip\"/FQDN=\"$SERVER_IP_ADDRESS\"/" $MOBILECONFIG_PATH/$MOBILECONFIG_SH
-	sed -i "s/CA=\"ca\"/CA=\"$CERT_CA\"/" $MOBILECONFIG_PATH/$MOBILECONFIG_SH
+        sed -i "s/CLIENT=\"client_name\"/CLIENT=\"$USER_NAME\"/" /root/n.mobileconfig.sh
+        sed -i "s/SERVER=\"server_name\"/SERVER=\"$SERVER_NAME\"/" /root/n.mobileconfig.sh
+        sed -i "s/FQDN=\"server_ip\"/FQDN=\"$SERVER_IP_ADDRESS\"/" /root/n.mobileconfig.sh
+        sed -i "s/CA=\"ca\"/CA=\"$CERT_CA\"/" /root/n.mobileconfig.sh
 
-	chmod u+x $MOBILECONFIG_PATH/$MOBILECONFIG_SH
-	$MOBILECONFIG_PATH/$MOBILECONFIG_SH > $MOBILECONFIG_PATH/$MOBILECONFIG_CONF
+        chmod u+x /root/n.mobileconfig.sh
+        /root/n.mobileconfig.sh > /root/ios.mobileconfig
 
-	cat $MOBILECONFIG_PATH/$MOBILECONFIG_CONF
+        echo ""
+        echo "########### [ Скопируйте блок ниже ] ##########"
+        echo "############### [ BEGIN BLOCK ] ###############"
+        echo ""
+        echo "###############################################"
+        echo ""
 
-	if [ -f "$MOBILECONFIG_PATH/$MOBILECONFIG_SH" ]; then
-		rm $MOBILECONFIG_PATH/$MOBILECONFIG_SH
-	fi
+        cat /root/ios.mobileconfig
 
-	if [ -f "$MOBILECONFIG_PATH/$MOBILECONFIG_CONF" ]; then
-		rm $MOBILECONFIG_PATH/$MOBILECONFIG_CONF
-	fi
-}
+        echo ""
+        echo "###############################################"
+        echo ""
+        echo "################ [ END BLOCK ] ################"
+        echo ""
 
-# Show VPN Users and Passwords
-showVPNUsers() {
-	echo ""
-	echo "=========== VPN Users ==========="
-	echo ""
-	grep -i " : EAP " /etc/ipsec.secrets
-	echo ""
-	echo "================================="
-	echo ""
-}
+        if [ -f "/root/n.mobileconfig.sh" ]; then
+        rm /root/n.mobileconfig.sh
+        fi
 
-getShellWindowsScript() {
+        if [ -f "/root/ios.mobileconfig" ]; then
+            rm /root/ios.mobileconfig
+        fi
 
-	if [ -f "$SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1" ]; then
-		rm $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
-	fi
-
-	SERVER_IP_ADDRESS=$(hostname -I | sed s/' '//g)
-    SERVER_NAME=$(hostname | sed s/' '//g)
-	CA_CERT_CONTENT=$(cat /etc/ipsec.d/cacerts/$CERT_CA)
-
-	wget -P $SHELLWINDOWS_PATH https://raw.githubusercontent.com/artemyakovlev94/vpnstrongswan/main/scriptwindows.ps1
-
-	sed -i "s/\"CA_CONTENT\"/$CA_CERT_CONTENT/" $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
-	sed -i "s/\"HOST_NAME\"/\"$SERVER_NAME\"/" $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
-	sed -i "s/\"HOST_IP_ADDRESS\"/\"$SERVER_IP_ADDRESS\"/" $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
-
-	echo ""
-	echo "########### [ Скопируйте блок ниже ] ##########"
-	echo "############### [ BEGIN BLOCK ] ###############"
-	echo ""
-	echo "###############################################"
-	echo ""
-
-	cat $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
-
-	echo ""
-	echo "###############################################"
-	echo ""
-	echo "################ [ END BLOCK ] ################"
-	echo ""
-
-	if [ -f "$SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1" ]; then
-		rm $SHELLWINDOWS_PATH/$SHELLWINDOWS_PS1
-	fi
-}
-
-testFunc() {
-	CA_CERT_CONTENT=$(cat /etc/ipsec.d/cacerts/$CERT_CA)
-	cat $CA_CERT_CONTENT
+    else
+        echo "Не удалось создать профиль для iPhone"
+    fi
 }
 
 while true; do
@@ -567,7 +562,6 @@ while true; do
 	echo "* 5 - Delete strongSwan VPN server user"
 	echo "* 6 - Show VPN Users and Passwords"
 	echo "* 7 - Get VPN Configuration Profile for iPhone"
-	echo "* 8 - Get PowerShell Script to Install VPN Server Certificate Authority Certificate"
 	echo "* 0 - Exit setup"
 	echo "*******************************************"
 
@@ -580,8 +574,6 @@ while true; do
 		[5]* ) deleteVPNUser;;
 		[6]* ) showVPNUsers;;
 		[7]* ) getVPNProfileIPhone;;
-        [8]* ) getShellWindowsScript;;
-		[9]* ) testFunc;;
 		[0]* ) break;;
 		* ) echo "Select a menu item.";;
   esac
